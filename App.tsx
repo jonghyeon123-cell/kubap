@@ -12,6 +12,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { DiningDataProvider } from './src/hooks/useDiningData';
 import { FavoritesProvider } from './src/hooks/useFavorites';
 import { RecentSearchesProvider } from './src/hooks/useRecentSearches';
 import { RootNavigator } from './src/navigation/RootNavigator';
@@ -37,12 +38,14 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <FavoritesProvider>
-        <RecentSearchesProvider>
-          <StatusBar style="dark" />
-          <RootNavigator />
-        </RecentSearchesProvider>
-      </FavoritesProvider>
+      <DiningDataProvider>
+        <FavoritesProvider>
+          <RecentSearchesProvider>
+            <StatusBar style="dark" />
+            <RootNavigator />
+          </RecentSearchesProvider>
+        </FavoritesProvider>
+      </DiningDataProvider>
     </SafeAreaProvider>
   );
 }

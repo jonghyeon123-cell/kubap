@@ -4,7 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DiningHallCard } from '../components/DiningHallCard';
 import { TopAppBar } from '../components/TopAppBar';
-import { diningHalls, getHallStatus } from '../data/diningHalls';
+import { getHallStatus } from '../data/diningHalls';
+import { useDiningData } from '../hooks/useDiningData';
 import { useFavorites } from '../hooks/useFavorites';
 import { useNowMinute } from '../hooks/useNowMinute';
 import { useRootNavigation } from '../navigation/types';
@@ -43,6 +44,7 @@ export function FavoritesScreen({ onBrowse }: FavoritesScreenProps) {
   const insets = useSafeAreaInsets();
   const now = useNowMinute();
   const navigation = useRootNavigation();
+  const { diningHalls } = useDiningData();
   const { favoriteIds, isLoading } = useFavorites();
 
   const saved = diningHalls.filter((hall) => favoriteIds.includes(hall.id));

@@ -12,19 +12,16 @@ import type {
   WeekdayMeta,
 } from './types';
 
-const data = raw as DiningData;
+/**
+ * 앱에 함께 빌드되는 식단. 네트워크가 없을 때의 최후 폴백이고,
+ * 평소에는 useDiningData가 GitHub에서 받아온 최신본으로 대체한다.
+ */
+export const bundledData = raw as DiningData;
 
-export const campuses: CampusMeta[] = data.campuses;
-export const meals: MealMeta[] = data.meals;
-export const weekdays: WeekdayMeta[] = data.weekdays;
-export const diningHalls: DiningHall[] = data.diningHalls;
-
-/** 데이터 출처와 기준 주 — 화면에 그대로 표시해 신선도를 드러낸다. */
-export const dataSource = {
-  source: data.source,
-  fetchedAt: data.fetchedAt,
-  weekOf: data.weekOf,
-};
+/** 끼니·요일 라벨은 구조적 상수라 원격 데이터와 무관하게 고정이다. */
+export const campuses: CampusMeta[] = bundledData.campuses;
+export const meals: MealMeta[] = bundledData.meals;
+export const weekdays: WeekdayMeta[] = bundledData.weekdays;
 
 /** 메뉴의 대표 이름. 목록·검색에서 한 줄로 보여줄 때 쓴다. */
 export function menuTitle(menu: MenuItem): string {
@@ -72,8 +69,8 @@ export function weekdayKeyOf(date: Date): WeekdayKey | null {
   return DAY_INDEX_TO_KEY[date.getDay()];
 }
 
-export function getHallById(id: string): DiningHall | undefined {
-  return diningHalls.find((hall) => hall.id === id);
+export function getHallById(halls: DiningHall[], id: string): DiningHall | undefined {
+  return halls.find((hall) => hall.id === id);
 }
 
 /** 해당 요일의 식단. 주말(null)이면 빈 배열. */
@@ -105,13 +102,13 @@ export interface SearchHit {
  * 식당 이름 · 건물 · 태그를 먼저 보고, 없으면 주간 식단에서 찾는다.
  * 메뉴로 걸린 결과는 어떤 메뉴 때문인지 함께 돌려줘서 화면에 근거를 보여줄 수 있게 한다.
  */
-export function searchHalls(query: string): SearchHit[] {
+export function searchHalls(halls: DiningHall[], query: string): SearchHit[] {
   const term = query.trim().toLowerCase();
   if (!term) return [];
 
   const hits: SearchHit[] = [];
 
-  for (const hall of diningHalls) {
+  for (const hall of halls) {
     const inHall = [hall.name, hall.building, ...hall.tags].some((field) =>
       field.toLowerCase().includes(term),
     );

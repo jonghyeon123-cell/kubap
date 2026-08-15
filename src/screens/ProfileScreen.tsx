@@ -1,11 +1,11 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TopAppBar } from '../components/TopAppBar';
-import { dataSource, diningHalls } from '../data/diningHalls';
+import { useDiningData, type DataOrigin } from '../hooks/useDiningData';
 import { useFavorites } from '../hooks/useFavorites';
 import { useRecentSearches } from '../hooks/useRecentSearches';
 import { useRootNavigation } from '../navigation/types';
@@ -13,6 +13,20 @@ import { colors, softShadow, TAB_BAR_HEIGHT } from '../theme/tokens';
 
 /** 되돌릴 수 없는 삭제는 한 번 더 물어본다. */
 type PendingAction = 'searches' | 'favorites' | null;
+
+const ORIGIN_LABEL: Record<DataOrigin, string> = {
+  remote: '서버 최신',
+  cache: '저장된 사본',
+  bundled: '앱 내장',
+};
+
+/** "2026-08-16T02:31:00Z" → "8월 16일 11:31" */
+function formatSyncedAt(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '-';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getMonth() + 1}월 ${date.getDate()}일 ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
 
 function SectionTitle({ children }: { children: string }) {
   return (
@@ -53,6 +67,8 @@ export function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useRootNavigation();
 
+  const { data, diningHalls, origin, syncedAt, isRefreshing, error, refresh } =
+    useDiningData();
   const { favoriteIds, clearFavorites } = useFavorites();
   const { recent, clearRecent } = useRecentSearches();
 
@@ -230,13 +246,65 @@ export function ProfileScreen() {
                   식단 기준 주
                 </Text>
                 <Text className="font-sans text-body-sm text-on-surface-variant">
-                  {dataSource.weekOf ?? '-'}
+                  {data.weekOf ?? '-'}
                 </Text>
               </View>
               <Text className="ml-[38px] font-sans text-body-sm text-outline">
-                {dataSource.source}
+                {data.source}
               </Text>
             </View>
+          </View>
+        </View>
+
+        {/* 식단 동기화 */}
+        <View className="mt-xl">
+          <SectionTitle>식단 동기화</SectionTitle>
+          <View style={softShadow} className="rounded-lg bg-surface-container-lowest">
+            <View className="gap-xs p-md">
+              <View className="flex-row items-center gap-md">
+                <MaterialIcons name="cloud-done" size={22} color={colors.onSurfaceVariant} />
+                <Text className="flex-1 font-sans text-body-md text-on-surface">
+                  데이터 출처
+                </Text>
+                <Text className="font-sans-semibold text-label-md text-on-surface-variant">
+                  {ORIGIN_LABEL[origin]}
+                </Text>
+              </View>
+              <Text className="ml-[38px] font-sans text-body-sm text-outline">
+                {syncedAt
+                  ? `마지막 동기화 ${formatSyncedAt(syncedAt)}`
+                  : '아직 서버에서 받아온 적이 없어요'}
+              </Text>
+              {error ? (
+                <Text className="ml-[38px] font-sans text-body-sm text-error">
+                  갱신 실패: {error}
+                </Text>
+              ) : null}
+            </View>
+
+            <View className="h-px bg-outline-variant/30" />
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ disabled: isRefreshing }}
+              onPress={refresh}
+              disabled={isRefreshing}
+              className="flex-row items-center gap-md p-md active:opacity-70"
+            >
+              <MaterialIcons
+                name="refresh"
+                size={22}
+                color={isRefreshing ? colors.outline : colors.primaryContainer}
+              />
+              <Text
+                className={`flex-1 font-sans text-body-md ${
+                  isRefreshing ? 'text-outline' : 'text-on-surface'
+                }`}
+              >
+                {isRefreshing ? '받아오는 중…' : '지금 새로고침'}
+              </Text>
+              {isRefreshing ? <ActivityIndicator color={colors.primaryContainer} /> : null}
+            </Pressable>
           </View>
         </View>
       </ScrollView>

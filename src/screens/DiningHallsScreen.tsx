@@ -5,7 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SearchResultCard } from '../components/SearchResultCard';
 import { TopAppBar } from '../components/TopAppBar';
-import { diningHalls, searchHalls } from '../data/diningHalls';
+import { searchHalls } from '../data/diningHalls';
+import { useDiningData } from '../hooks/useDiningData';
 import { useRecentSearches } from '../hooks/useRecentSearches';
 import { useRootNavigation } from '../navigation/types';
 import { colors, softShadow, TAB_BAR_HEIGHT } from '../theme/tokens';
@@ -13,13 +14,17 @@ import { colors, softShadow, TAB_BAR_HEIGHT } from '../theme/tokens';
 export function DiningHallsScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useRootNavigation();
+  const { diningHalls } = useDiningData();
   const { recent, addRecent, clearRecent } = useRecentSearches();
 
   const [query, setQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
 
   const trimmed = query.trim();
-  const results = useMemo(() => searchHalls(trimmed), [trimmed]);
+  const results = useMemo(
+    () => searchHalls(diningHalls, trimmed),
+    [diningHalls, trimmed],
+  );
 
   const openHall = (hallId: string) => {
     // 결과를 실제로 열었을 때만 검색어를 남긴다.

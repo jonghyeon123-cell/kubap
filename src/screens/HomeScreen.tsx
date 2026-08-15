@@ -1,20 +1,22 @@
 import { useMemo, useState } from 'react';
-import { FlatList, Text, View } from 'react-native';
+import { FlatList, RefreshControl, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DiningHallCard } from '../components/DiningHallCard';
 import { FilterChipRow, type FilterChip } from '../components/FilterChipRow';
 import { TopAppBar } from '../components/TopAppBar';
-import { diningHalls, getHallStatus } from '../data/diningHalls';
+import { getHallStatus } from '../data/diningHalls';
 import type { DiningHall, HallStatus } from '../data/types';
+import { useDiningData } from '../hooks/useDiningData';
 import { useNowMinute } from '../hooks/useNowMinute';
 import { useRootNavigation } from '../navigation/types';
-import { TAB_BAR_HEIGHT } from '../theme/tokens';
+import { colors, TAB_BAR_HEIGHT } from '../theme/tokens';
 
 export function HomeScreen() {
   const insets = useSafeAreaInsets();
   const now = useNowMinute();
   const navigation = useRootNavigation();
+  const { diningHalls, isRefreshing, refresh } = useDiningData();
 
   const [openOnly, setOpenOnly] = useState(false);
 
@@ -24,7 +26,7 @@ export function HomeScreen() {
       diningHalls
         .map((hall) => ({ hall, status: getHallStatus(hall, now) }))
         .filter(({ status }) => !openOnly || status.isOpen),
-    [openOnly, now],
+    [diningHalls, openOnly, now],
   );
 
   const chips: FilterChip[] = [
@@ -80,6 +82,14 @@ export function HomeScreen() {
               필터를 끄면 전체 식당을 볼 수 있어요
             </Text>
           </View>
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={refresh}
+            tintColor={colors.primary}
+            colors={[colors.primaryContainer]}
+          />
         }
         contentContainerStyle={{
           paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 20,

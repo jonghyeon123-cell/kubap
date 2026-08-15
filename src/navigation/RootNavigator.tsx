@@ -10,6 +10,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getHallById } from '../data/diningHalls';
+import { useDiningData } from '../hooks/useDiningData';
 import { DetailScreen } from '../screens/DetailScreen';
 import { DiningHallsScreen } from '../screens/DiningHallsScreen';
 import { FavoritesScreen } from '../screens/FavoritesScreen';
@@ -104,7 +105,8 @@ function HallDetailRoute({
   route,
   navigation,
 }: NativeStackScreenProps<RootStackParamList, 'HallDetail'>) {
-  const hall = getHallById(route.params.hallId);
+  const { diningHalls } = useDiningData();
+  const hall = getHallById(diningHalls, route.params.hallId);
 
   // 저장된 즐겨찾기가 데이터에서 사라진 경우에도 화면이 깨지지 않게 한다.
   if (!hall) {

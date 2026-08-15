@@ -14,7 +14,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MEAL_ACCENT, MenuCard } from '../components/MenuCard';
 import {
-  dataSource,
   formatKoreanTime,
   getHallStatus,
   getMenusForDay,
@@ -24,6 +23,7 @@ import {
   weekdays,
 } from '../data/diningHalls';
 import type { DiningHall, WeekdayKey } from '../data/types';
+import { useDiningData } from '../hooks/useDiningData';
 import { useFavorites } from '../hooks/useFavorites';
 import { useNowMinute } from '../hooks/useNowMinute';
 import { colors, softShadow } from '../theme/tokens';
@@ -63,6 +63,7 @@ function FloatingIconButton({
 export function DetailScreen({ hall, onBack }: DetailScreenProps) {
   const insets = useSafeAreaInsets();
   const now = useNowMinute();
+  const { data } = useDiningData();
   const { isFavorite, toggleFavorite } = useFavorites();
 
   const [dayTab, setDayTab] = useState<DayTab>('today');
@@ -225,9 +226,9 @@ export function DetailScreen({ hall, onBack }: DetailScreenProps) {
           <View>
             <View className="mb-md flex-row items-baseline justify-between gap-sm">
               <Text className="font-sans-bold text-headline-sm text-primary">식단표</Text>
-              {dataSource.weekOf ? (
+              {data.weekOf ? (
                 <Text className="font-sans text-body-sm text-on-surface-variant">
-                  {dataSource.weekOf}
+                  {data.weekOf}
                 </Text>
               ) : null}
             </View>
