@@ -6,7 +6,7 @@
  *
  * 앱과 같은 Crimson Heritage 토큰(crimson_heritage/DESIGN.md)을 쓴다.
  */
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -420,6 +420,8 @@ async function main() {
 </div>
 `;
 
+  // build/는 gitignore 대상이라 CI 체크아웃에는 없다. 스크립트가 직접 만든다.
+  await mkdir(path.dirname(outPath), { recursive: true });
   await writeFile(outPath, html, 'utf8');
   console.log(`생성: ${path.relative(ROOT, outPath)}  (${halls.length}개 식당 / ${totalMenus}건)`);
 }
