@@ -1,4 +1,4 @@
-name: 주간 학식 갱신
+name: 주간 학식 갱신 + 앱 배포
 
 on:
   schedule:
@@ -37,13 +37,8 @@ jobs:
       - name: 학교 사이트에서 이번 주 식단 받기
         run: node scripts/fetch-menus.mjs
 
-      - name: 웹페이지 생성
-        run: |
-          node scripts/build-menu-page.mjs
-          # Pages는 index.html을 찾는다. 아티팩트 재게시용 경로는 그대로 둔다.
-          cp build/weekly-menu.html build/index.html
-          # 앱이 런타임에 받아가는 데이터 엔드포인트.
-          cp data/dining-halls.json build/dining-halls.json
+      - name: 앱 웹 빌드 + 식단표 + 데이터 엔드포인트
+        run: node scripts/build-web.mjs
 
       - name: 바뀐 식단 커밋
         run: |
@@ -74,5 +69,6 @@ jobs:
             echo "- 기준 주: $(node -p "require('./data/dining-halls.json').weekOf")"
             echo "- 식당: $(node -p "require('./data/dining-halls.json').diningHalls.length")곳"
             echo "- 식단: $(node -p "require('./data/dining-halls.json').diningHalls.reduce((s,h)=>s+Object.values(h.weeklyMenus).flat().length,0)")건"
-            echo "- 페이지: ${{ steps.deploy.outputs.page_url }}"
+            echo "- 앱: ${{ steps.deploy.outputs.page_url }}"
+            echo "- 식단표: ${{ steps.deploy.outputs.page_url }}weekly-menu.html"
           } >> "$GITHUB_STEP_SUMMARY"
