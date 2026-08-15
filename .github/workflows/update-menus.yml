@@ -42,6 +42,8 @@ jobs:
           node scripts/build-menu-page.mjs
           # Pages는 index.html을 찾는다. 아티팩트 재게시용 경로는 그대로 둔다.
           cp build/weekly-menu.html build/index.html
+          # 앱이 런타임에 받아가는 데이터 엔드포인트.
+          cp data/dining-halls.json build/dining-halls.json
 
       - name: 바뀐 식단 커밋
         run: |
