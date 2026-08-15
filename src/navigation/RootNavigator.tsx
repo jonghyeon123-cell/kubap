@@ -11,6 +11,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getHallById } from '../data/diningHalls';
 import { useDiningData } from '../hooks/useDiningData';
+
+import { linking } from './linking';
 import { DetailScreen } from '../screens/DetailScreen';
 import { DiningHallsScreen } from '../screens/DiningHallsScreen';
 import { FavoritesScreen } from '../screens/FavoritesScreen';
@@ -127,7 +129,7 @@ function HallDetailRoute({
 
 export function RootNavigator() {
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer theme={navTheme} linking={linking}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Tabs" component={TabNavigator} />
         <Stack.Screen name="HallDetail" component={HallDetailRoute} />

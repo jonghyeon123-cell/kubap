@@ -13,11 +13,7 @@ import {
 import { bundledData } from '../data/diningHalls';
 import type { DiningData, DiningHall } from '../data/types';
 
-/**
- * GitHub Actions가 매주 월요일 갱신해 Pages에 올리는 식단 파일.
- * scripts/fetch-menus.mjs → data/dining-halls.json → build/dining-halls.json 경로로 배포된다.
- */
-const REMOTE_URL = 'https://jonghyeon123-cell.github.io/kubap/dining-halls.json';
+import { DINING_DATA_URL } from '../config';
 
 const CACHE_KEY = '@kubap/dining-data';
 const REQUEST_TIMEOUT_MS = 10_000;
@@ -88,7 +84,7 @@ export function DiningDataProvider({ children }: { children: ReactNode }) {
     setError(null);
 
     try {
-      const response = await fetch(REMOTE_URL, {
+      const response = await fetch(DINING_DATA_URL, {
         // 학교 식단은 주 1회만 바뀌지만, 캐시된 응답을 잡고 있으면 갱신이 늦어진다.
         cache: 'no-cache',
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
