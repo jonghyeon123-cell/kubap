@@ -52,6 +52,11 @@ function renderMenu(menu) {
           </li>`;
 }
 
+/** "학생회관 학생식당" → "학생회관". 필터 버튼에 쓸 짧은 이름. */
+function shortName(name) {
+  return name.replace(/\s*(?:학생식당|식당)$/, '') || name;
+}
+
 function renderHall(hall, dayKey) {
   const menus = (hall.weeklyMenus[dayKey] ?? []).filter(
     (m) => m.items.filter((i) => i && i !== '-').length > 0,
@@ -62,7 +67,7 @@ function renderHall(hall, dayKey) {
   menus.sort((a, b) => order[a.meal] - order[b.meal]);
 
   return `
-        <article class="hall">
+        <article class="hall" data-hall="${esc(hall.id)}">
           <header class="hall__head">
             <h3 class="hall__name">${esc(hall.name)}</h3>
             <p class="hall__where">${esc(hall.building)}</p>
@@ -76,13 +81,15 @@ function renderDay(day, halls) {
   const cards = halls.map((hall) => renderHall(hall, day.key)).filter(Boolean);
   const note = DAY_NOTES[day.key];
 
+  // 이 날 아예 식단이 없는 경우(휴일 등)와, 식당 필터 때문에 비는 경우는 다른 문구를 쓴다.
   const body = cards.length
     ? `<div class="halls">${cards.join('')}
-      </div>`
+      </div>
+      <p class="day__empty" data-role="no-match" hidden>선택한 식당은 이 날 등록된 식단이 없어요.</p>`
     : `<p class="day__empty">${esc(note ?? '등록된 식단이 없습니다.')}</p>`;
 
   return `
-    <section class="day" id="day-${day.key}">
+    <section class="day" id="day-${day.key}" data-day="${esc(day.key)}"${cards.length ? '' : ' data-always-empty="true"'}>
       <div class="day__head">
         <h2 class="day__title"><span class="day__dow">${esc(day.label)}</span>${esc(day.date)}</h2>
         ${cards.length && note ? `<p class="day__note">${esc(note)}</p>` : ''}
@@ -231,33 +238,69 @@ async function main() {
   }
   .facts b { color: var(--ink-soft); font-weight: 600; font-variant-numeric: tabular-nums; }
 
-  /* ── 요일 바로가기 ─────────────────────── */
-  .daynav {
+  /* ── 필터 ─────────────────────────────── */
+  .filters {
     position: sticky;
     top: 0;
     z-index: 10;
     display: flex;
-    gap: 8px;
-    margin: 28px 0 8px;
-    padding: 12px 0;
+    flex-direction: column;
+    gap: 10px;
+    margin: 28px 0 4px;
+    padding: 14px 0 12px;
     background: var(--ground);
     border-bottom: 1px solid var(--line);
-    overflow-x: auto;
   }
-  .daynav a {
+
+  .filters__group { display: flex; align-items: center; gap: 10px; min-width: 0; }
+
+  .filters__label {
     flex: 0 0 auto;
-    padding: 7px 15px;
+    width: 30px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+  }
+
+  .filters__row {
+    display: flex;
+    gap: 7px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+  .filters__row::-webkit-scrollbar { display: none; }
+
+  .chip {
+    flex: 0 0 auto;
+    padding: 7px 14px;
     border-radius: 999px;
-    background: var(--surface-alt);
     border: 1px solid var(--line);
+    background: var(--surface-alt);
     color: var(--ink-soft);
+    font: inherit;
     font-size: 13px;
     font-weight: 600;
-    text-decoration: none;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+  }
+  .chip:hover { border-color: var(--brand); color: var(--brand); }
+  .chip:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+  .chip[aria-pressed="true"] {
+    background: var(--brand-fill);
+    border-color: var(--brand-fill);
+    color: var(--on-fill);
+  }
+  .chip[aria-pressed="true"]:hover { color: var(--on-fill); }
+
+  .filters__count {
+    margin: 0;
+    font-size: 12px;
+    color: var(--ink-faint);
     font-variant-numeric: tabular-nums;
   }
-  .daynav a:hover { border-color: var(--brand); color: var(--brand); }
-  .daynav a:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
   /* ── 하루 ─────────────────────────────── */
   .day { padding-top: 34px; scroll-margin-top: 68px; }
@@ -382,9 +425,13 @@ async function main() {
   .colophon a { color: var(--brand); text-decoration: underline; text-underline-offset: 2px; }
   .colophon a:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
+  /* display:flex/grid를 쓰는 요소는 hidden 속성만으로 안 숨는다. */
+  [hidden] { display: none !important; }
+
   @media (max-width: 520px) {
     .wrap { padding: 28px 16px 56px; }
     .halls { grid-template-columns: 1fr; }
+    .filters__label { display: none; }
   }
 </style>
 
@@ -400,11 +447,36 @@ async function main() {
     </ul>
   </header>
 
-  <nav class="daynav" aria-label="요일 바로가기">
-    ${DAYS.map((d) => `<a href="#day-${d.key}">${esc(d.label)} ${esc(d.date.replace('8월 ', '8/').replace('일', ''))}</a>`).join('\n    ')}
-  </nav>
+  <div class="filters">
+    <div class="filters__group" role="group" aria-label="요일 선택">
+      <span class="filters__label">요일</span>
+      <div class="filters__row">
+        <button type="button" class="chip" data-day-filter="all" aria-pressed="true">전체</button>
+        ${DAYS.map(
+          (d) =>
+            `<button type="button" class="chip" data-day-filter="${esc(d.key)}" aria-pressed="false">${esc(d.label)} ${esc(d.date.replace('8월 ', '8/').replace('일', ''))}</button>`,
+        ).join('\n        ')}
+      </div>
+    </div>
+
+    <div class="filters__group" role="group" aria-label="식당 선택">
+      <span class="filters__label">식당</span>
+      <div class="filters__row">
+        <button type="button" class="chip" data-hall-all aria-pressed="true">전체</button>
+        ${halls
+          .map(
+            (h) =>
+              `<button type="button" class="chip" data-hall-filter="${esc(h.id)}" aria-pressed="true">${esc(shortName(h.name))}</button>`,
+          )
+          .join('\n        ')}
+      </div>
+    </div>
+
+    <p class="filters__count" data-role="count" aria-live="polite"></p>
+  </div>
 
   <main>${DAYS.map((day) => renderDay(day, halls)).join('')}
+    <p class="day__empty" data-role="none-selected" hidden>보고 싶은 식당을 하나 이상 선택해주세요.</p>
   </main>
 
   <footer class="colophon">
@@ -418,6 +490,103 @@ async function main() {
     <p>가격은 학교가 식단표에 함께 게시한 경우에만 표시됩니다. 조식은 방학 중 미운영이라 이번 주 등록분이 없습니다.</p>
   </footer>
 </div>
+
+<script>
+  (function () {
+    'use strict';
+
+    var days = Array.prototype.slice.call(document.querySelectorAll('.day'));
+    var dayChips = Array.prototype.slice.call(document.querySelectorAll('[data-day-filter]'));
+    var hallChips = Array.prototype.slice.call(document.querySelectorAll('[data-hall-filter]'));
+    var hallAllChip = document.querySelector('[data-hall-all]');
+    var countEl = document.querySelector('[data-role="count"]');
+    var noneSelectedEl = document.querySelector('[data-role="none-selected"]');
+
+    var selectedDay = 'all';
+    var selectedHalls = new Set(
+      hallChips.map(function (chip) { return chip.getAttribute('data-hall-filter'); })
+    );
+
+    function press(chip, on) { chip.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+
+    function apply() {
+      // 카드 수가 아니라 실제 식당 수를 센다 (한 식당이 여러 날에 걸쳐 나오므로).
+      var shownHallIds = new Set();
+      var shownDays = 0;
+      var visibleMenus = 0;
+      var noneSelected = selectedHalls.size === 0;
+
+      days.forEach(function (section) {
+        var dayMatches = selectedDay === 'all' || selectedDay === section.getAttribute('data-day');
+        var alwaysEmpty = section.hasAttribute('data-always-empty');
+        var cards = Array.prototype.slice.call(section.querySelectorAll('.hall'));
+        var shown = 0;
+
+        cards.forEach(function (card) {
+          var show = dayMatches && !noneSelected &&
+            selectedHalls.has(card.getAttribute('data-hall'));
+          card.hidden = !show;
+          if (show) {
+            shown += 1;
+            shownHallIds.add(card.getAttribute('data-hall'));
+            visibleMenus += card.querySelectorAll('.menu').length;
+          }
+        });
+
+        if (dayMatches && (shown > 0 || alwaysEmpty)) shownDays += 1;
+
+        // 식당 필터로 비어버린 날은 안내 문구로 대체한다.
+        var noMatch = section.querySelector('[data-role="no-match"]');
+        if (noMatch) noMatch.hidden = !(dayMatches && !noneSelected && shown === 0);
+
+        // 휴일처럼 원래 식단이 없는 날은 요일이 맞으면 그대로 보여준다.
+        section.hidden = !dayMatches || (noneSelected && !alwaysEmpty);
+      });
+
+      if (noneSelectedEl) noneSelectedEl.hidden = !noneSelected;
+
+      countEl.textContent = noneSelected
+        ? '선택된 식당이 없습니다'
+        : shownDays + '일 · 식당 ' + shownHallIds.size + '곳 · 식단 ' + visibleMenus + '건';
+
+      if (hallAllChip) press(hallAllChip, selectedHalls.size === hallChips.length);
+    }
+
+    dayChips.forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        selectedDay = chip.getAttribute('data-day-filter');
+        dayChips.forEach(function (other) { press(other, other === chip); });
+        apply();
+      });
+    });
+
+    hallChips.forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        var id = chip.getAttribute('data-hall-filter');
+        if (selectedHalls.has(id)) selectedHalls.delete(id);
+        else selectedHalls.add(id);
+        press(chip, selectedHalls.has(id));
+        apply();
+      });
+    });
+
+    if (hallAllChip) {
+      hallAllChip.addEventListener('click', function () {
+        // 전체가 이미 켜져 있으면 모두 해제, 아니면 모두 선택.
+        var turnOn = selectedHalls.size !== hallChips.length;
+        selectedHalls.clear();
+        hallChips.forEach(function (chip) {
+          var id = chip.getAttribute('data-hall-filter');
+          if (turnOn) selectedHalls.add(id);
+          press(chip, turnOn);
+        });
+        apply();
+      });
+    }
+
+    apply();
+  })();
+</script>
 `;
 
   // build/는 gitignore 대상이라 CI 체크아웃에는 없다. 스크립트가 직접 만든다.
