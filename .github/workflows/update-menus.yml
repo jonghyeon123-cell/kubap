@@ -1,0 +1,76 @@
+name: 주간 학식 갱신
+
+on:
+  schedule:
+    # 월요일 07:00 KST (일요일 22:00 UTC).
+    # 학교가 새 주 식단을 올린 뒤, 그 주 첫 점심 전에 돈다.
+    - cron: '0 22 * * 0'
+  workflow_dispatch: # 저장소 Actions 탭에서 수동 실행
+
+permissions:
+  contents: write # 갱신된 JSON을 커밋
+  pages: write # Pages 배포
+  id-token: write # Pages 배포 인증
+
+concurrency:
+  group: weekly-menu
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: 학교 사이트에서 이번 주 식단 받기
+        run: node scripts/fetch-menus.mjs
+
+      - name: 웹페이지 생성
+        run: |
+          node scripts/build-menu-page.mjs
+          # Pages는 index.html을 찾는다. 아티팩트 재게시용 경로는 그대로 둔다.
+          cp build/weekly-menu.html build/index.html
+
+      - name: 바뀐 식단 커밋
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git diff --quiet -- data/dining-halls.json; then
+            echo '식단 변경 없음 — 커밋 건너뜀'
+          else
+            git add data/dining-halls.json
+            git commit -m "chore: 주간 학식 갱신 ($(date -u +%Y-%m-%d))"
+            git push
+          fi
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
+
+      - name: 요약
+        run: |
+          {
+            echo '### 주간 학식 갱신 완료'
+            echo ''
+            echo "- 기준 주: $(node -p "require('./data/dining-halls.json').weekOf")"
+            echo "- 식당: $(node -p "require('./data/dining-halls.json').diningHalls.length")곳"
+            echo "- 식단: $(node -p "require('./data/dining-halls.json').diningHalls.reduce((s,h)=>s+Object.values(h.weeklyMenus).flat().length,0)")건"
+            echo "- 페이지: ${{ steps.deploy.outputs.page_url }}"
+          } >> "$GITHUB_STEP_SUMMARY"

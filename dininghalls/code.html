@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>KU밥 - Search</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "on-background": "#1c1b1b",
+                        "background": "#fcf9f8",
+                        "tertiary-fixed-dim": "#cac6bf",
+                        "on-secondary-fixed": "#241a00",
+                        "on-primary-fixed-variant": "#832331",
+                        "tertiary-container": "#4b4944",
+                        "secondary": "#735c00",
+                        "on-secondary-container": "#745c00",
+                        "on-secondary-fixed-variant": "#574500",
+                        "primary-container": "#862633",
+                        "surface-container-highest": "#e5e2e1",
+                        "surface": "#fcf9f8",
+                        "outline": "#897172",
+                        "on-primary-fixed": "#40000c",
+                        "surface-dim": "#dcd9d9",
+                        "on-tertiary-container": "#bcb8b2",
+                        "surface-container": "#f0eded",
+                        "surface-tint": "#a23b47",
+                        "on-error": "#ffffff",
+                        "on-primary-container": "#ff9ea3",
+                        "tertiary-fixed": "#e6e2db",
+                        "on-tertiary-fixed-variant": "#484742",
+                        "surface-container-low": "#f6f3f2",
+                        "inverse-primary": "#ffb3b6",
+                        "surface-variant": "#e5e2e1",
+                        "primary-fixed-dim": "#ffb3b6",
+                        "error": "#ba1a1a",
+                        "on-secondary": "#ffffff",
+                        "inverse-surface": "#313030",
+                        "secondary-container": "#fed65b",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary": "#34332e",
+                        "on-surface": "#1c1b1b",
+                        "secondary-fixed": "#ffe088",
+                        "primary": "#670d1e",
+                        "surface-bright": "#fcf9f8",
+                        "primary-fixed": "#ffdada",
+                        "on-surface-variant": "#564242",
+                        "outline-variant": "#dcc0c0",
+                        "surface-container-high": "#eae7e7",
+                        "inverse-on-surface": "#f3f0ef",
+                        "on-tertiary-fixed": "#1c1c17",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed-dim": "#e9c349"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "md": "16px",
+                        "unit": "4px",
+                        "container-padding": "20px",
+                        "lg": "24px",
+                        "sm": "8px",
+                        "gutter": "12px",
+                        "xl": "32px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Manrope"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "body-lg": ["Manrope"],
+                        "body-sm": ["Manrope"],
+                        "display-lg": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-md": ["Manrope"],
+                        "headline-sm": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md min-h-screen">
+<!-- TopAppBar -->
+<header class="bg-surface flex justify-between items-center w-full px-container-padding h-14 z-50 shadow-sm docked full-width top-0 fixed">
+<button class="material-symbols-outlined text-on-surface-variant hover:opacity-80 transition-opacity active:scale-95 duration-200" data-icon="menu">menu</button>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">KU밥</h1>
+<button class="material-symbols-outlined text-on-surface-variant hover:opacity-80 transition-opacity active:scale-95 duration-200" data-icon="notifications">notifications</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-[72px] pb-[100px] px-container-padding">
+<!-- Search Input -->
+<div class="relative w-full mb-xl">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full pl-12 pr-4 py-4 rounded-xl border border-outline-variant bg-surface-container-lowest text-body-lg font-body-lg text-on-surface focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none transition-colors shadow-[0px_4px_20px_rgba(26,26,26,0.06)] placeholder:text-outline" placeholder="식당 이름이나 메뉴로 검색" type="text"/>
+</div>
+<!-- Recent Searches -->
+<section class="mb-xl">
+<h2 class="font-headline-sm text-headline-sm text-on-surface mb-md">최근 검색어</h2>
+<div class="flex flex-wrap gap-sm">
+<button class="bg-surface-container text-on-surface-variant rounded-full px-4 py-2 font-label-md text-label-md hover:bg-surface-dim transition-colors active:scale-95 border border-outline-variant/30">학생회관</button>
+<button class="bg-surface-container text-on-surface-variant rounded-full px-4 py-2 font-label-md text-label-md hover:bg-surface-dim transition-colors active:scale-95 border border-outline-variant/30">돈까스</button>
+<button class="bg-surface-container text-on-surface-variant rounded-full px-4 py-2 font-label-md text-label-md hover:bg-surface-dim transition-colors active:scale-95 border border-outline-variant/30">제육볶음</button>
+<button class="bg-surface-container text-on-surface-variant rounded-full px-4 py-2 font-label-md text-label-md hover:bg-surface-dim transition-colors active:scale-95 border border-outline-variant/30">이공계</button>
+</div>
+</section>
+<!-- Search Results (Initial State / Suggestions) -->
+<section>
+<h2 class="font-headline-sm text-headline-sm text-on-surface mb-md">추천 식당</h2>
+<div class="flex flex-col gap-sm">
+<!-- Result Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-md flex justify-between items-center shadow-[0px_4px_20px_rgba(26,26,26,0.06)] active:scale-[0.98] transition-transform cursor-pointer border border-outline-variant/20">
+<div class="flex flex-col">
+<h3 class="font-body-lg text-body-lg font-semibold text-on-surface">학생회관 학생식당</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[16px]">location_on</span> 학생회관 2층
+                        </p>
+</div>
+<div class="bg-primary-container/10 text-primary-container px-3 py-1 rounded-full font-label-md text-label-md">
+                        300m
+                    </div>
+</div>
+<!-- Result Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-md flex justify-between items-center shadow-[0px_4px_20px_rgba(26,26,26,0.06)] active:scale-[0.98] transition-transform cursor-pointer border border-outline-variant/20">
+<div class="flex flex-col">
+<h3 class="font-body-lg text-body-lg font-semibold text-on-surface">교우회관 식당</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[16px]">location_on</span> 교우회관 지하 1층
+                        </p>
+</div>
+<div class="bg-primary-container/10 text-primary-container px-3 py-1 rounded-full font-label-md text-label-md">
+                        450m
+                    </div>
+</div>
+<!-- Result Card 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-md flex justify-between items-center shadow-[0px_4px_20px_rgba(26,26,26,0.06)] active:scale-[0.98] transition-transform cursor-pointer border border-outline-variant/20">
+<div class="flex flex-col">
+<h3 class="font-body-lg text-body-lg font-semibold text-on-surface">애기능 생활관 식당</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[16px]">location_on</span> 애기능 생활관 1층
+                        </p>
+</div>
+<div class="bg-primary-container/10 text-primary-container px-3 py-1 rounded-full font-label-md text-label-md">
+                        800m
+                    </div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-xs pb-sm pt-xs bg-surface/80 backdrop-blur-md shadow-[0px_-4px_20px_rgba(26,26,26,0.04)] docked full-width rounded-t-xl md:hidden">
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant/50 w-[72px] py-2 rounded-xl transition-colors">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-md text-label-md mt-1">Home</span>
+</button>
+<!-- Active Tab: Dining Halls (Search Context) -->
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 hover:bg-surface-variant/50 transition-all duration-200 active:scale-90 shadow-sm">
+<span class="material-symbols-outlined" data-icon="restaurant" style="font-variation-settings: 'FILL' 1;">restaurant</span>
+<span class="font-label-md text-label-md mt-1">Dining Halls</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant/50 w-[72px] py-2 rounded-xl transition-colors">
+<span class="material-symbols-outlined" data-icon="favorite">favorite</span>
+<span class="font-label-md text-label-md mt-1">Favorites</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant/50 w-[72px] py-2 rounded-xl transition-colors">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-md text-label-md mt-1">Profile</span>
+</button>
+</nav>
+</body></html>

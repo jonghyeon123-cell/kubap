@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "KU밥",
+    "slug": "kubap",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "kubap",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "backgroundColor": "#fcf9f8",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "kr.ac.korea.kubap"
+    },
+    "android": {
+      "package": "kr.ac.korea.kubap",
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
