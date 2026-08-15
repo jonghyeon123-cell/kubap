@@ -4,6 +4,7 @@ import { useState } from 'react';
 import {
   Image,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -85,8 +86,24 @@ export function DetailScreen({ hall, onBack }: DetailScreenProps) {
   };
 
   const handleDirections = () => {
-    const query = encodeURIComponent(`${hall.address} ${hall.name}`);
-    Linking.openURL(`https://map.kakao.com/link/search/${query}`).catch(() => {});
+    // 지도에서는 도로명 주소보다 캠퍼스 건물명이 훨씬 잘 잡힌다.
+    // "학생회관 2층" → "고려대학교 학생회관"
+    const building = hall.building.replace(/\s*(?:지하\s*)?\d+층\s*$/, '').trim();
+    const query = encodeURIComponent(`고려대학교 ${building || hall.name}`);
+
+    const webUrl = `https://map.naver.com/p/search/${query}`;
+
+    if (Platform.OS === 'web') {
+      Linking.openURL(webUrl).catch(() => {});
+      return;
+    }
+
+    // 네이버지도 앱이 깔려 있으면 앱으로, 아니면 웹으로 넘긴다.
+    const appUrl = `nmap://search?query=${query}&appname=kr.ac.korea.kubap`;
+    Linking.canOpenURL(appUrl)
+      .then((supported) => Linking.openURL(supported ? appUrl : webUrl))
+      .catch(() => Linking.openURL(webUrl))
+      .catch(() => {});
   };
 
   return (
