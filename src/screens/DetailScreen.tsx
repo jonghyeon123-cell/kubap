@@ -1,6 +1,6 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Image,
   Linking,
@@ -10,6 +10,10 @@ import {
   Share,
   Text,
   View,
+  useWindowDimensions,
+  type LayoutChangeEvent,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -31,8 +35,17 @@ import { colors, softShadow } from '../theme/tokens';
 
 const HEADER_IMAGE_HEIGHT = 280;
 
+/** 웹에서 DOM으로 직접 스크롤하기 위한 식별자. */
+const PAGER_ID = 'kubap-day-pager';
+
 /** "오늘" 탭은 실제 요일로 해석되고, 나머지는 고정 요일이다. */
 type DayTab = 'today' | WeekdayKey;
+
+/** 탭 순서 = 스와이프 순서. */
+const DAY_TABS: { key: DayTab; label: string }[] = [
+  { key: 'today', label: '오늘' },
+  ...weekdays.map((day) => ({ key: day.key as DayTab, label: day.label })),
+];
 
 interface DetailScreenProps {
   hall: DiningHall;
@@ -68,14 +81,82 @@ export function DetailScreen({ hall, onBack }: DetailScreenProps) {
   const { isFavorite, toggleFavorite } = useFavorites();
 
   const [dayTab, setDayTab] = useState<DayTab>('today');
+  const { width: windowWidth } = useWindowDimensions();
+  const [measuredWidth, setMeasuredWidth] = useState(0);
+  // onLayout이 웹에서 늦거나 안 오는 경우가 있어 창 너비로 먼저 잡아둔다.
+  // (좌우 컨테이너 여백 20px씩을 뺀 값)
+  const pageWidth = measuredWidth || Math.max(windowWidth - 40, 0);
+  const pagerRef = useRef<ScrollView>(null);
 
   const status = getHallStatus(hall, now);
   const todayKey = weekdayKeyOf(now);
-  const selectedDay: WeekdayKey | null = dayTab === 'today' ? todayKey : dayTab;
-  const dayMenus = getMenusForDay(hall, selectedDay);
 
-  // "오늘" 탭을 보고 있을 때만 현재 끼니를 강조한다.
-  const currentMeal = status.isOpen && dayTab === 'today' ? status.meal : null;
+  const handlePagerLayout = (event: LayoutChangeEvent) => {
+    const width = Math.round(event.nativeEvent.layout.width);
+    if (width > 0 && width !== measuredWidth) setMeasuredWidth(width);
+  };
+
+  /** 탭을 누르면 해당 페이지로 밀어준다. */
+  const selectDay = (key: DayTab) => {
+    setDayTab(key);
+    const index = DAY_TABS.findIndex((tab) => tab.key === key);
+    if (pageWidth <= 0 || index < 0) return;
+
+    const x = index * pageWidth;
+
+    // 웹에서는 NativeWind로 감싼 트리에서 ScrollView ref가 비어 있고,
+    // DOM 노드의 scrollTo()도 scroll-snap과 함께 쓰면 무시된다.
+    // scrollLeft 대입은 정상 동작하므로 그쪽을 쓴다.
+    if (Platform.OS === 'web') {
+      // scroll-behavior: smooth를 켜면 scroll-snap과 충돌해 대입이 무시된다.
+      const node = document.getElementById(PAGER_ID);
+      if (node) node.scrollLeft = x;
+      return;
+    }
+
+    pagerRef.current?.scrollTo({ x, y: 0, animated: true });
+  };
+
+  /** 스크롤 위치를 탭 상태에 반영한다. 웹에서는 momentum 콜백이 안 와서 onScroll로 따라간다. */
+  const handlePageSettled = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (pageWidth <= 0) return;
+    const raw = Math.round(event.nativeEvent.contentOffset.x / pageWidth);
+    const index = Math.min(Math.max(raw, 0), DAY_TABS.length - 1);
+    const next = DAY_TABS[index];
+    if (next && next.key !== dayTab) setDayTab(next.key);
+  };
+
+  /** 한 요일치 식단. 페이지마다 독립적으로 그린다. */
+  const renderDayMenus = (tab: DayTab) => {
+    const day = tab === 'today' ? todayKey : tab;
+    const menus = getMenusForDay(hall, day);
+    // "오늘" 탭을 보고 있을 때만 현재 끼니를 강조한다.
+    const highlightMeal = status.isOpen && tab === 'today' ? status.meal : null;
+
+    if (menus.length > 0) {
+      return menus.map((menu, index) => (
+        <MenuCard
+          key={`${menu.meal}-${menu.category}-${index}`}
+          menu={menu}
+          isCurrent={menu.meal === highlightMeal}
+        />
+      ));
+    }
+
+    const isWeekendToday = tab === 'today' && !todayKey;
+    return (
+      <View className="items-center gap-xs rounded-xl bg-surface-container-low p-xl">
+        <Text className="font-sans-semibold text-body-md text-on-surface">
+          {isWeekendToday ? '주말에는 운영하지 않아요' : '식단이 준비되지 않았어요'}
+        </Text>
+        <Text className="text-center font-sans text-body-sm text-on-surface-variant">
+          {isWeekendToday
+            ? '월~금 식단은 옆으로 넘기면 볼 수 있어요'
+            : '다른 요일로 넘겨보세요'}
+        </Text>
+      </View>
+    );
+  };
 
   const saved = isFavorite(hall.id);
 
@@ -255,54 +336,56 @@ export function DetailScreen({ hall, onBack }: DetailScreenProps) {
               showsHorizontalScrollIndicator={false}
               contentContainerClassName="flex-row gap-sm pb-sm"
             >
-              {([{ key: 'today', label: '오늘' }] as { key: DayTab; label: string }[])
-                .concat(weekdays.map((day) => ({ key: day.key, label: day.label })))
-                .map((tab) => {
-                  const selected = tab.key === dayTab;
-                  return (
-                    <Pressable
-                      key={tab.key}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected }}
-                      onPress={() => setDayTab(tab.key)}
-                      className={`shrink-0 rounded-full px-lg py-sm active:opacity-80 ${
-                        selected ? 'bg-primary-container' : 'bg-surface-container-highest'
+              {DAY_TABS.map((tab) => {
+                const selected = tab.key === dayTab;
+                return (
+                  <Pressable
+                    key={tab.key}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    onPress={() => selectDay(tab.key)}
+                    className={`shrink-0 rounded-full px-lg py-sm active:opacity-80 ${
+                      selected ? 'bg-primary-container' : 'bg-surface-container-highest'
+                    }`}
+                  >
+                    <Text
+                      className={`font-sans-semibold text-label-md ${
+                        selected ? 'text-on-primary' : 'text-on-surface-variant'
                       }`}
                     >
-                      <Text
-                        className={`font-sans-semibold text-label-md ${
-                          selected ? 'text-on-primary' : 'text-on-surface-variant'
-                        }`}
-                      >
-                        {tab.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+                      {tab.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </ScrollView>
 
-            <View className="mt-lg gap-md">
-              {dayMenus.length > 0 ? (
-                dayMenus.map((menu, index) => (
-                  <MenuCard
-                    key={`${menu.meal}-${menu.category}-${index}`}
-                    menu={menu}
-                    isCurrent={menu.meal === currentMeal}
-                  />
-                ))
+            {/* 좌우로 밀어서 요일을 넘긴다. 위 탭 버튼과 양방향으로 맞물린다. */}
+            <View className="mt-lg" onLayout={handlePagerLayout}>
+              {pageWidth > 0 ? (
+                <ScrollView
+                  ref={pagerRef}
+                  nativeID={PAGER_ID}
+                  horizontal
+                  pagingEnabled
+                  showsHorizontalScrollIndicator={false}
+                  onScroll={handlePageSettled}
+                  scrollEventThrottle={16}
+                  onMomentumScrollEnd={handlePageSettled}
+                  onScrollEndDrag={handlePageSettled}
+                  decelerationRate="fast"
+                  snapToInterval={pageWidth}
+                  disableIntervalMomentum
+                >
+                  {DAY_TABS.map((tab) => (
+                    <View key={tab.key} style={{ width: pageWidth }}>
+                      <View className="gap-md">{renderDayMenus(tab.key)}</View>
+                    </View>
+                  ))}
+                </ScrollView>
               ) : (
-                <View className="items-center gap-xs rounded-xl bg-surface-container-low p-xl">
-                  <Text className="font-sans-semibold text-body-md text-on-surface">
-                    {dayTab === 'today' && !todayKey
-                      ? '주말에는 운영하지 않아요'
-                      : '식단이 준비되지 않았어요'}
-                  </Text>
-                  <Text className="font-sans text-body-sm text-on-surface-variant">
-                    {dayTab === 'today' && !todayKey
-                      ? '월~금 식단은 요일 탭에서 볼 수 있어요'
-                      : '다른 요일을 선택해보세요'}
-                  </Text>
-                </View>
+                // 폭을 재기 전 한 프레임 동안은 선택된 요일만 그린다.
+                <View className="gap-md">{renderDayMenus(dayTab)}</View>
               )}
             </View>
           </View>
