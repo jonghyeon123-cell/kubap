@@ -12,16 +12,41 @@ import path from 'node:path';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-const DAYS = [
-  { key: 'mon', label: '월', date: '8월 17일' },
-  { key: 'tue', label: '화', date: '8월 18일' },
-  { key: 'wed', label: '수', date: '8월 19일' },
-  { key: 'thu', label: '목', date: '8월 20일' },
-  { key: 'fri', label: '금', date: '8월 21일' },
-];
+/** data.weekOf 또는 fetchedAt 기준 월~금 날짜와 레이블을 동적으로 계산 */
+function getDaysForWeek(data) {
+  let mondayDate;
+  if (data?.weekOf) {
+    const match = String(data.weekOf).match(/(\d{4})\.(\d{1,2})\.(\d{1,2})/);
+    if (match) {
+      mondayDate = new Date(Date.UTC(+match[1], +match[2] - 1, +match[3], 12));
+    }
+  }
+  if (!mondayDate || isNaN(mondayDate.getTime())) {
+    const fetched = data?.fetchedAt ? new Date(data.fetchedAt) : new Date();
+    const day = (fetched.getUTCDay() + 6) % 7;
+    mondayDate = new Date(fetched.getTime() - day * 86400000);
+  }
 
-/** 학교 식단표에 '대체공휴일'로 게시된 날. */
-const DAY_NOTES = { mon: '대체공휴일 — 전 식당 미운영' };
+  const DAY_DEFS = [
+    { key: 'mon', label: '월', offset: 0 },
+    { key: 'tue', label: '화', offset: 1 },
+    { key: 'wed', label: '수', offset: 2 },
+    { key: 'thu', label: '목', offset: 3 },
+    { key: 'fri', label: '금', offset: 4 },
+  ];
+
+  return DAY_DEFS.map(({ key, label, offset }) => {
+    const d = new Date(mondayDate.getTime() + offset * 86400000);
+    const m = d.getUTCMonth() + 1;
+    const dateNum = d.getUTCDate();
+    return {
+      key,
+      label,
+      date: `${m}월 ${dateNum}일`,
+      shortDate: `${m}/${dateNum}`,
+    };
+  });
+}
 
 const MEAL_LABEL = { breakfast: '조식', lunch: '중식', dinner: '석식' };
 
@@ -77,9 +102,9 @@ function renderHall(hall, dayKey) {
         </article>`;
 }
 
-function renderDay(day, halls) {
+function renderDay(day, halls, dayNotes = {}) {
   const cards = halls.map((hall) => renderHall(hall, day.key)).filter(Boolean);
-  const note = DAY_NOTES[day.key];
+  const note = dayNotes[day.key];
 
   // 이 날 아예 식단이 없는 경우(휴일 등)와, 식당 필터 때문에 비는 경우는 다른 문구를 쓴다.
   const body = cards.length
@@ -106,6 +131,9 @@ async function main() {
   const data = JSON.parse(
     await readFile(path.join(ROOT, 'data', 'dining-halls.json'), 'utf8'),
   );
+
+  const days = getDaysForWeek(data);
+  const dayNotes = data.dayNotes ?? {};
 
   // 이번 주 식단이 하나라도 있는 식당만 싣는다.
   const halls = data.diningHalls.filter((hall) =>
@@ -452,9 +480,9 @@ async function main() {
       <span class="filters__label">요일</span>
       <div class="filters__row">
         <button type="button" class="chip" data-day-filter="all" aria-pressed="true">전체</button>
-        ${DAYS.map(
+        ${days.map(
           (d) =>
-            `<button type="button" class="chip" data-day-filter="${esc(d.key)}" aria-pressed="false">${esc(d.label)} ${esc(d.date.replace('8월 ', '8/').replace('일', ''))}</button>`,
+            `<button type="button" class="chip" data-day-filter="${esc(d.key)}" aria-pressed="false">${esc(d.label)} ${esc(d.shortDate)}</button>`,
         ).join('\n        ')}
       </div>
     </div>
@@ -475,7 +503,7 @@ async function main() {
     <p class="filters__count" data-role="count" aria-live="polite"></p>
   </div>
 
-  <main>${DAYS.map((day) => renderDay(day, halls)).join('')}
+  <main>${days.map((day) => renderDay(day, halls, dayNotes)).join('')}
     <p class="day__empty" data-role="none-selected" hidden>보고 싶은 식당을 하나 이상 선택해주세요.</p>
   </main>
 
